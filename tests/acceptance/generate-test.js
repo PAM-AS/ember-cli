@@ -139,6 +139,7 @@ describe('Acceptance: ember generate', function() {
     return generate([
       'model',
       'foo',
+      'noType',
       'firstName:string',
       'created_at:date',
       'is-published:boolean',
@@ -150,6 +151,7 @@ describe('Acceptance: ember generate', function() {
     ]).then(function() {
       assertFile('app/models/foo.js', {
         contains: [
+          "noType: DS.attr()",
           "firstName: DS.attr('string')",
           "createdAt: DS.attr('date')",
           "isPublished: DS.attr('boolean')",
@@ -430,15 +432,24 @@ describe('Acceptance: ember generate', function() {
   it('blueprint foo', function() {
     return generate(['blueprint', 'foo']).then(function() {
       assertFile('blueprints/foo/index.js', {
-        contains: "var Blueprint = require('ember-cli/lib/models/blueprint');\n\n" +
-                  "module.exports = Blueprint.extend({\n" +
-                  "});"
+        contains: "module.exports = {\n" +
+                  "  // locals: function(options) {\n" +
+                  "  //   // Return custom template variables here.\n" +
+                  "  //   return {\n" +
+                  "  //     foo: options.entity.options.foo\n" +
+                  "  //   };\n" +
+                  "  // }\n" +
+                  "\n" +
+                  "  // afterInstall: function(options) {\n" +
+                  "  //   // Perform extra work here.\n" +
+                  "  // }\n" +
+                  "};"
       });
     });
   });
 
-  it('api-stub foo/bar', function() {
-    return generate(['api-stub', '/foo/bar']).then(function() {
+  it('api-stub foo', function() {
+    return generate(['api-stub', 'foo']).then(function() {
       assertFile('server/index.js', {
         contains: "var bodyParser = require('body-parser');\n" +
                   "var globSync   = require('glob').sync;\n" +
@@ -453,11 +464,13 @@ describe('Acceptance: ember generate', function() {
                   "  routes.forEach(function(route) { route(app); });\n" +
                   "};"
       });
-      assertFile('server/routes/foo/bar.js', {
+      assertFile('server/routes/foo.js', {
         contains: "module.exports = function(app) {\n" +
-                  "  app.get('/foo/bar', function(req, res) {\n" +
-                  "    res.send('hello');\n" +
+                  "  var fooRouter = express.Router();\n" +
+                  "  fooRouter.get('/', function(req, res) {\n" +
+                  "    res.send({foo:[]});\n" +
                   "  });\n" +
+                  "  app.use('/api/foo', fooRouter);\n" +
                   "};"
       });
       assertFile('server/.jshintrc', {
